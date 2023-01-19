@@ -1,7 +1,11 @@
 {
     "name": "adeboyed/laravel-ews-driver",
     "description": "Adds Exchange Web Services Mail Support to Laravel.",
-    "keywords": ["laravel", "exchange", "ews"],
+    "keywords": [
+        "laravel",
+        "exchange",
+        "ews"
+    ],
     "homepage": "https://github.com/adeboyed/laravel-ews-driver",
     "license": "Apache-2.0",
     "authors": [
@@ -12,15 +16,15 @@
     ],
     "prefer-stable": true,
     "require": {
-		"php": ">=7.1",
+        "php": ">=7.1",
         "php-ews/php-ews": "^1.0"
     },
     "require-dev": {
-		"phpunit/phpunit": "6.*"
+        "phpunit/phpunit": "6.*"
     },
     "autoload": {
         "psr-4": {
-            "Adeboyed\\LaravelSendgridDriver\\": "src/"
+            "Adeboyed\\LaravelExchangeDriver\\": "src/"
         }
     },
     "support": {
@@ -29,9 +33,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Adeboyed\\LaravelExchangeDriver\\ExchangeAddedServiceProvider"
+                "Adeboyed\\LaravelExchangeDriver\\ExchangeServiceProvider"
             ]
         }
     }
-    
 }
