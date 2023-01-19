@@ -2,6 +2,7 @@
 
 namespace Adeboyed\LaravelExchangeDriver\Transport;
 
+use Illuminate\Support\Facades\Log;
 use Swift_Mime_SimpleMessage;
 
 use jamesiarmes\PhpEws\Client;
@@ -17,9 +18,14 @@ use jamesiarmes\PhpEws\Type\BodyType;
 use jamesiarmes\PhpEws\Type\EmailAddressType;
 use jamesiarmes\PhpEws\Type\MessageType;
 use jamesiarmes\PhpEws\Type\SingleRecipientType;
+use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mailer\Transport\TransportInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\RawMessage;
 
-class ExchangeTransport implements MailerInterface
+class ExchangeTransport implements TransportInterface
 {
     protected $host;
     protected $username;
@@ -34,9 +40,21 @@ class ExchangeTransport implements MailerInterface
         $this->messageDispositionType = $messageDispositionType;
     }
 
-    public function send(Swift_Mime_SimpleMessage $simpleMessage, &$failedRecipients = null)
+    public function __toString(): string
     {
-        $this->beforeSendPerformed($simpleMessage);
+        return "exchange";
+    }
+
+    public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
+    {
+        Log::info('Sending email via ExchangeTransport', [
+            'message' => $message->toString(),
+            'envelope' => $envelope,
+        ]);
+
+        // return new SentMessage($message, $envelope ?? Envelope::create($message));
+
+        $simpleMessage = [];
 
         $client = new Client(
             $this->host,
@@ -90,10 +108,9 @@ class ExchangeTransport implements MailerInterface
             }
         }
 
-
         $this->sendPerformed($simpleMessage);
 
-        return $this->numberOfRecipients($simpleMessage);
+        return new SentMessage($simpleMessage, (string) $this);
     }
 
     /**
