@@ -2,27 +2,25 @@
 
 namespace Adeboyed\LaravelExchangeDriver\Transport;
 
-use Illuminate\Mail\Transport\Transport;
 use Swift_Mime_SimpleMessage;
 
-use \jamesiarmes\PhpEws\Client;
-use \jamesiarmes\PhpEws\Request\CreateItemType;
+use jamesiarmes\PhpEws\Client;
+use jamesiarmes\PhpEws\Request\CreateItemType;
 
-use \jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
-use \jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
+use jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
+use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
 
-use \jamesiarmes\PhpEws\Enumeration\BodyTypeType;
-use \jamesiarmes\PhpEws\Enumeration\ResponseClassType;
+use jamesiarmes\PhpEws\Enumeration\BodyTypeType;
+use jamesiarmes\PhpEws\Enumeration\ResponseClassType;
 
-use \jamesiarmes\PhpEws\Type\BodyType;
-use \jamesiarmes\PhpEws\Type\EmailAddressType;
-use \jamesiarmes\PhpEws\Type\MessageType;
-use \jamesiarmes\PhpEws\Type\SingleRecipientType;
+use jamesiarmes\PhpEws\Type\BodyType;
+use jamesiarmes\PhpEws\Type\EmailAddressType;
+use jamesiarmes\PhpEws\Type\MessageType;
+use jamesiarmes\PhpEws\Type\SingleRecipientType;
+use Symfony\Component\Mailer\MailerInterface;
 
-
-class ExchangeTransport extends Transport
+class ExchangeTransport implements MailerInterface
 {
-
     protected $host;
     protected $username;
     protected $password;
@@ -38,7 +36,6 @@ class ExchangeTransport extends Transport
 
     public function send(Swift_Mime_SimpleMessage $simpleMessage, &$failedRecipients = null)
     {
-
         $this->beforeSendPerformed($simpleMessage);
 
         $client = new Client(
