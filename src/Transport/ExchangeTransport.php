@@ -2,9 +2,6 @@
 
 namespace Adeboyed\LaravelExchangeDriver\Transport;
 
-use Illuminate\Support\Facades\Log;
-use Swift_Mime_SimpleMessage;
-
 use jamesiarmes\PhpEws\Client;
 use jamesiarmes\PhpEws\Request\CreateItemType;
 
@@ -47,14 +44,9 @@ class ExchangeTransport implements TransportInterface
 
     public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
     {
-        Log::info('Sending email via ExchangeTransport', [
-            'message' => $message->toString(),
-            'envelope' => $envelope,
-        ]);
-
-        // return new SentMessage($message, $envelope ?? Envelope::create($message));
-
-        $simpleMessage = [];
+        if (!($message instanceof Email)) {
+            throw new \InvalidArgumentException(sprintf('"%s" transport only supports instances of "%s" (instance of "%s" given).', __CLASS__, Email::class, get_debug_type($message)));
+        }
 
         $client = new Client(
             $this->host,
@@ -69,7 +61,7 @@ class ExchangeTransport implements TransportInterface
 
         // Create the ewsMessage.
         $ewsMessage = new MessageType();
-        $ewsMessage->Subject = $simpleMessage->getSubject();
+        $ewsMessage->Subject = $message->getSubject();
         $ewsMessage->ToRecipients = new ArrayOfRecipientsType();
 
         // Set the sender.
@@ -78,19 +70,20 @@ class ExchangeTransport implements TransportInterface
         $ewsMessage->From->Mailbox->EmailAddress = config('mail.from.address');
 
         // Set the recipient.
-        foreach ($this->allContacts($simpleMessage) as $email => $name) {
+        $ewsMessage->ToRecipients = new ArrayOfRecipientsType();
+        $ewsMessage->ToRecipients->Mailbox = [];
+
+        // Add all recipients.
+        foreach ($message->getTo() as $rec) {
             $recipient = new EmailAddressType();
-            $recipient->EmailAddress = $email;
-            if ($name != null) {
-                $recipient->Name = $name;
-            }
+            $recipient->EmailAddress = $rec->getAddress();
             $ewsMessage->ToRecipients->Mailbox[] = $recipient;
         }
 
         // Set the ewsMessage body.
         $ewsMessage->Body = new BodyType();
         $ewsMessage->Body->BodyType = BodyTypeType::HTML;
-        $ewsMessage->Body->_ = $simpleMessage->getBody();
+        $ewsMessage->Body->_ = $message->getHtmlBody();
 
         $request->Items->Message[] = $ewsMessage;
         $response = $client->CreateItem($request);
@@ -108,23 +101,6 @@ class ExchangeTransport implements TransportInterface
             }
         }
 
-        $this->sendPerformed($simpleMessage);
-
-        return new SentMessage($simpleMessage, (string) $this);
-    }
-
-    /**
-     * Get all of the contacts for the ewsMessage
-     *
-     * @param \Swift_Mime_SimpleMessage $ewsMessage
-     * @return array
-     */
-    protected function allContacts(Swift_Mime_SimpleMessage $message)
-    {
-        return array_merge(
-            (array) $message->getTo(),
-            (array) $message->getCc(),
-            (array) $message->getBcc()
-        );
+        return new SentMessage($message, $envelope);
     }
 }
