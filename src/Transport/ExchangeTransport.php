@@ -117,7 +117,7 @@ class ExchangeTransport extends Transport
         return $this->numberOfRecipients($message);
     }
 
-    private function createArrayOfRecipientsType(string|array $recipients): ArrayOfRecipientsType
+    private function createArrayOfRecipientsType(string|array|null $recipients): ArrayOfRecipientsType
     {
         $arrayOfRecipientsType = new ArrayOfRecipientsType();
 
