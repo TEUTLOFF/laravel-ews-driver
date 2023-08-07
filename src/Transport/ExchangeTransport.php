@@ -4,6 +4,7 @@ namespace Adeboyed\LaravelExchangeDriver\Transport;
 
 use Illuminate\Mail\Transport\Transport;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
 use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
 use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAttachmentsType;
@@ -18,6 +19,7 @@ use jamesiarmes\PhpEws\Type\MessageType;
 use jamesiarmes\PhpEws\Type\SingleRecipientType;
 use Swift_Attachment;
 use Swift_Mime_SimpleMessage;
+use Swift_TransportException;
 
 class ExchangeTransport extends Transport
 {
@@ -37,6 +39,9 @@ class ExchangeTransport extends Transport
         $this->messageDispositionType = $messageDispositionType;
     }
 
+    /**
+     * @throws Swift_TransportException
+     */
     public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
     {
         $this->beforeSendPerformed($message);
@@ -61,15 +66,10 @@ class ExchangeTransport extends Transport
         $ewsMessage->From->Mailbox = new EmailAddressType();
         $ewsMessage->From->Mailbox->EmailAddress = config('mail.from.address');
 
-        $toRecipients = $message->getTo();
-        $ccRecipients = $message->getCc();
-        $bccRecipients = $message->getBcc();
-        $replyToRecipients = $message->getReplyTo();
-
-        $ewsMessage->ToRecipients = $this->createArrayOfRecipientsType($toRecipients);
-        $ewsMessage->CcRecipients = $this->createArrayOfRecipientsType($ccRecipients);
-        $ewsMessage->BccRecipients = $this->createArrayOfRecipientsType($bccRecipients);
-        $ewsMessage->ReplyTo = $this->createArrayOfRecipientsType($replyToRecipients);
+        $ewsMessage->ToRecipients = $this->createArrayOfRecipientsType($message->getTo());
+        $ewsMessage->CcRecipients = $this->createArrayOfRecipientsType($message->getCc());
+        $ewsMessage->BccRecipients = $this->createArrayOfRecipientsType($message->getBcc());
+        $ewsMessage->ReplyTo = $this->createArrayOfRecipientsType($message->getReplyTo());
 
         // Set the ewsMessage body.
         $ewsMessage->Body = new BodyType();
@@ -99,12 +99,16 @@ class ExchangeTransport extends Transport
         // Iterate over the results, printing any error messages or ewsMessage ids.
         $response_messages = $response->ResponseMessages->CreateItemResponseMessage;
         foreach ($response_messages as $response_message) {
-            // Make sure the request succeeded.
-            if ($response_message->ResponseClass != ResponseClassType::SUCCESS) {
-                $code = $response_message->ResponseCode;
-                $ewsMessage
-                    = $response_message->MessageText;
-                fwrite(STDERR, "Message failed to create with \"{$code}: {$ewsMessage}\"\n");
+            $code = $response_message->ResponseCode;
+            $ewsMessage = $response_message->MessageText;
+
+            if ($response_message->ResponseClass === ResponseClassType::ERROR) {
+                throw new Swift_TransportException("Message failed to create with \"{$code}: {$ewsMessage}\"");
+            } elseif ($response_message->ResponseClass === ResponseClassType::WARNING) {
+                Log::warning(__CLASS__, [
+                    'code' => $code,
+                    'message' => $ewsMessage,
+                ]);
             }
         }
 
