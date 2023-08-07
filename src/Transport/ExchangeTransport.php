@@ -3,29 +3,26 @@
 namespace Adeboyed\LaravelExchangeDriver\Transport;
 
 use Illuminate\Mail\Transport\Transport;
+use jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
+use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
+use jamesiarmes\PhpEws\Client;
+use jamesiarmes\PhpEws\Enumeration\BodyTypeType;
+use jamesiarmes\PhpEws\Enumeration\ResponseClassType;
+use jamesiarmes\PhpEws\Request\CreateItemType;
+use jamesiarmes\PhpEws\Type\BodyType;
+use jamesiarmes\PhpEws\Type\EmailAddressType;
+use jamesiarmes\PhpEws\Type\MessageType;
+use jamesiarmes\PhpEws\Type\SingleRecipientType;
 use Swift_Mime_SimpleMessage;
-
-use \jamesiarmes\PhpEws\Client;
-use \jamesiarmes\PhpEws\Request\CreateItemType;
-
-use \jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
-use \jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
-
-use \jamesiarmes\PhpEws\Enumeration\BodyTypeType;
-use \jamesiarmes\PhpEws\Enumeration\ResponseClassType;
-
-use \jamesiarmes\PhpEws\Type\BodyType;
-use \jamesiarmes\PhpEws\Type\EmailAddressType;
-use \jamesiarmes\PhpEws\Type\MessageType;
-use \jamesiarmes\PhpEws\Type\SingleRecipientType;
-
 
 class ExchangeTransport extends Transport
 {
-
     protected $host;
+
     protected $username;
+
     protected $password;
+
     protected $messageDispositionType;
 
     public function __construct($host, $username, $password, $messageDispositionType)
@@ -38,7 +35,6 @@ class ExchangeTransport extends Transport
 
     public function send(Swift_Mime_SimpleMessage $simpleMessage, &$failedRecipients = null)
     {
-
         $this->beforeSendPerformed($simpleMessage);
 
         $client = new Client(
@@ -88,11 +84,11 @@ class ExchangeTransport extends Transport
                 $code = $response_message->ResponseCode;
                 $ewsMessage
                     = $response_message->MessageText;
-                fwrite(STDERR, "Message failed to create with \"$code: $ewsMessage\"\n");
+                fwrite(STDERR, "Message failed to create with \"{$code}: {$ewsMessage}\"\n");
+
                 continue;
             }
         }
-
 
         $this->sendPerformed($simpleMessage);
 
@@ -102,7 +98,7 @@ class ExchangeTransport extends Transport
     /**
      * Get all of the contacts for the ewsMessage
      *
-     * @param \Swift_Mime_SimpleMessage $ewsMessage
+     * @param  \Swift_Mime_SimpleMessage  $ewsMessage
      * @return array
      */
     protected function allContacts(Swift_Mime_SimpleMessage $message)

@@ -2,12 +2,10 @@
 
 namespace Adeboyed\LaravelExchangeDriver;
 
+use Adeboyed\LaravelExchangeDriver\Transport\ExchangeTransport;
 use Illuminate\Mail\MailManager;
 use Illuminate\Support\ServiceProvider;
-use \jamesiarmes\PhpEws\Enumeration\MessageDispositionType;
-
-use Adeboyed\LaravelExchangeDriver\Transport\ExchangeTransport;
-
+use jamesiarmes\PhpEws\Enumeration\MessageDispositionType;
 
 class ExchangeAddedServiceProvider extends ServiceProvider
 {
@@ -19,7 +17,7 @@ class ExchangeAddedServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->afterResolving(MailManager::class, function (MailManager $mail_manager) {
-            $mail_manager->extend("exchange", function ($config) {
+            $mail_manager->extend('exchange', function ($config) {
                 $config = $this->app['config']->get('mail.mailers.exchange', []);
                 $host = $config['host'];
                 $username = $config['username'];

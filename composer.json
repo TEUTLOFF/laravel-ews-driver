@@ -16,7 +16,8 @@
         "php-ews/php-ews": "^1.0"
     },
     "require-dev": {
-		"phpunit/phpunit": "6.*"
+		"phpunit/phpunit": "^9.6.7",
+        "laravel/pint": "^1.10"
     },
     "autoload": {
         "psr-4": {
