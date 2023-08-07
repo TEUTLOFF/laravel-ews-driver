@@ -3,6 +3,7 @@
 namespace Adeboyed\LaravelExchangeDriver\Transport;
 
 use Illuminate\Mail\Transport\Transport;
+use Illuminate\Support\Arr;
 use jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
 use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
 use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAttachmentsType;
@@ -54,22 +55,21 @@ class ExchangeTransport extends Transport
         // Create the ewsMessage.
         $ewsMessage = new MessageType();
         $ewsMessage->Subject = $message->getSubject();
-        $ewsMessage->ToRecipients = new ArrayOfRecipientsType();
 
         // Set the sender.
         $ewsMessage->From = new SingleRecipientType();
         $ewsMessage->From->Mailbox = new EmailAddressType();
         $ewsMessage->From->Mailbox->EmailAddress = config('mail.from.address');
 
-        // Set the recipient.
-        foreach ($this->allContacts($message) as $email => $name) {
-            $recipient = new EmailAddressType();
-            $recipient->EmailAddress = $email;
-            if ($name != null) {
-                $recipient->Name = $name;
-            }
-            $ewsMessage->ToRecipients->Mailbox[] = $recipient;
-        }
+        $toRecipients = $message->getTo();
+        $ccRecipients = $message->getCc();
+        $bccRecipients = $message->getBcc();
+        $replyToRecipients = $message->getReplyTo();
+
+        $ewsMessage->ToRecipients = $this->createArrayOfRecipientsType($toRecipients);
+        $ewsMessage->CcRecipients = $this->createArrayOfRecipientsType($ccRecipients);
+        $ewsMessage->BccRecipients = $this->createArrayOfRecipientsType($bccRecipients);
+        $ewsMessage->ReplyTo = $this->createArrayOfRecipientsType($replyToRecipients);
 
         // Set the ewsMessage body.
         $ewsMessage->Body = new BodyType();
@@ -105,8 +105,6 @@ class ExchangeTransport extends Transport
                 $ewsMessage
                     = $response_message->MessageText;
                 fwrite(STDERR, "Message failed to create with \"{$code}: {$ewsMessage}\"\n");
-
-                continue;
             }
         }
 
@@ -115,18 +113,26 @@ class ExchangeTransport extends Transport
         return $this->numberOfRecipients($message);
     }
 
-    /**
-     * Get all of the contacts for the ewsMessage
-     *
-     * @param  \Swift_Mime_SimpleMessage  $ewsMessage
-     * @return array
-     */
-    protected function allContacts(Swift_Mime_SimpleMessage $message)
+    private function createArrayOfRecipientsType(string|array $recipients): ArrayOfRecipientsType
     {
-        return array_merge(
-            (array) $message->getTo(),
-            (array) $message->getCc(),
-            (array) $message->getBcc()
-        );
+        $arrayOfRecipientsType = new ArrayOfRecipientsType();
+
+        foreach (Arr::wrap($recipients) as $email => $name) {
+            $arrayOfRecipientsType->Mailbox[] = $this->getRecipient($email, $name);
+        }
+
+        return $arrayOfRecipientsType;
+    }
+
+    private function getRecipient(int|string $email, mixed $name): EmailAddressType
+    {
+        $recipient = new EmailAddressType();
+        $recipient->EmailAddress = $email;
+
+        if ($name != null) {
+            $recipient->Name = $name;
+        }
+
+        return $recipient;
     }
 }
