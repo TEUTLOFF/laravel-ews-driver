@@ -5,14 +5,17 @@ namespace Adeboyed\LaravelExchangeDriver\Transport;
 use Illuminate\Mail\Transport\Transport;
 use jamesiarmes\PhpEws\ArrayType\ArrayOfRecipientsType;
 use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAllItemsType;
+use jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfAttachmentsType;
 use jamesiarmes\PhpEws\Client;
 use jamesiarmes\PhpEws\Enumeration\BodyTypeType;
 use jamesiarmes\PhpEws\Enumeration\ResponseClassType;
 use jamesiarmes\PhpEws\Request\CreateItemType;
 use jamesiarmes\PhpEws\Type\BodyType;
 use jamesiarmes\PhpEws\Type\EmailAddressType;
+use jamesiarmes\PhpEws\Type\FileAttachmentType;
 use jamesiarmes\PhpEws\Type\MessageType;
 use jamesiarmes\PhpEws\Type\SingleRecipientType;
+use Swift_Attachment;
 use Swift_Mime_SimpleMessage;
 
 class ExchangeTransport extends Transport
@@ -72,6 +75,23 @@ class ExchangeTransport extends Transport
         $ewsMessage->Body = new BodyType();
         $ewsMessage->Body->BodyType = BodyTypeType::HTML;
         $ewsMessage->Body->_ = $message->getBody();
+
+        // Attachments
+        if ($attachments = $message->getChildren()) {
+            $ewsMessage->Attachments = new NonEmptyArrayOfAttachmentsType();
+
+            foreach ($attachments as $attachment) {
+                if ($attachment instanceof Swift_Attachment) {
+                    $fileAttachment = new FileAttachmentType();
+
+                    $fileAttachment->Name = $attachment->getFilename();
+                    $fileAttachment->Content = base64_encode($attachment->getBody());
+                    $fileAttachment->ContentType = $attachment->getContentType();
+
+                    $ewsMessage->Attachments->FileAttachment[] = $fileAttachment;
+                }
+            }
+        }
 
         $request->Items->Message[] = $ewsMessage;
         $response = $client->CreateItem($request);
