@@ -33,9 +33,9 @@ class ExchangeTransport extends Transport
         $this->messageDispositionType = $messageDispositionType;
     }
 
-    public function send(Swift_Mime_SimpleMessage $simpleMessage, &$failedRecipients = null)
+    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
     {
-        $this->beforeSendPerformed($simpleMessage);
+        $this->beforeSendPerformed($message);
 
         $client = new Client(
             $this->host,
@@ -50,7 +50,7 @@ class ExchangeTransport extends Transport
 
         // Create the ewsMessage.
         $ewsMessage = new MessageType();
-        $ewsMessage->Subject = $simpleMessage->getSubject();
+        $ewsMessage->Subject = $message->getSubject();
         $ewsMessage->ToRecipients = new ArrayOfRecipientsType();
 
         // Set the sender.
@@ -59,7 +59,7 @@ class ExchangeTransport extends Transport
         $ewsMessage->From->Mailbox->EmailAddress = config('mail.from.address');
 
         // Set the recipient.
-        foreach ($this->allContacts($simpleMessage) as $email => $name) {
+        foreach ($this->allContacts($message) as $email => $name) {
             $recipient = new EmailAddressType();
             $recipient->EmailAddress = $email;
             if ($name != null) {
@@ -71,7 +71,7 @@ class ExchangeTransport extends Transport
         // Set the ewsMessage body.
         $ewsMessage->Body = new BodyType();
         $ewsMessage->Body->BodyType = BodyTypeType::HTML;
-        $ewsMessage->Body->_ = $simpleMessage->getBody();
+        $ewsMessage->Body->_ = $message->getBody();
 
         $request->Items->Message[] = $ewsMessage;
         $response = $client->CreateItem($request);
@@ -90,9 +90,9 @@ class ExchangeTransport extends Transport
             }
         }
 
-        $this->sendPerformed($simpleMessage);
+        $this->sendPerformed($message);
 
-        return $this->numberOfRecipients($simpleMessage);
+        return $this->numberOfRecipients($message);
     }
 
     /**
