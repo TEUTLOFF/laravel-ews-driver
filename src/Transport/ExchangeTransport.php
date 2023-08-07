@@ -85,7 +85,7 @@ class ExchangeTransport extends Transport
                     $fileAttachment = new FileAttachmentType();
 
                     $fileAttachment->Name = $attachment->getFilename();
-                    $fileAttachment->Content = base64_encode($attachment->getBody());
+                    $fileAttachment->Content = $attachment->getBody();
                     $fileAttachment->ContentType = $attachment->getContentType();
 
                     $ewsMessage->Attachments->FileAttachment[] = $fileAttachment;
